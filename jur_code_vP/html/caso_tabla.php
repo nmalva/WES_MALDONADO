@@ -270,6 +270,7 @@ function redireccionar(pagina) {
 	location.href=pagina;
 	}             
 }
+
 //--END JAVASCRIPT FUNCTIONS--
 </script>
 
