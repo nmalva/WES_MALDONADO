@@ -91,6 +91,66 @@ function escribir_actividades($get_cas_id){
         
     }
 }
+
+function escribir_archivos_caso($get_cas_id){
+    $class_bd=new bd();
+    $class_utiles= new utiles();
+    $sql="SELECT * FROM Archivos 
+    		WHERE cas_id={$get_cas_id}";
+
+    $resultado=$class_bd->ejecutar($sql);
+    
+    while ($r=$class_bd->retornar_fila($resultado))
+    {
+           
+        $fecha= $class_utiles->fecha_mysql_php_datetime($r["arc_timestamp"]);
+        $ruta='../../files/'.$r["arc_ruta"]."".$r{"arc_nombre"};
+        
+        $table="<tr href='{$ruta}' style='cursor:pointer'>";
+        $table.="<td style='color:{$color};'>{$r["act_id"]}</td>";
+        $table.="<td style='color:{$color};'><a href='{$ruta}' target='_blank'>{$r["arc_nombre"]}</a></td>";
+        $table.="<td style='color:{$color};'>{$r["arc_peso"]} KB</td>";
+        $table.="<td style='color:{$color};'>{$fecha}</td>";
+        $table.="<td onclick='eliminar_archivo({$r["arc_id"]});' style='cursor:pointer; style='text'><i style='font-size:15px;' class='fa fa-times'></td>";
+        $table.="</tr>";
+
+        echo $table;
+        
+    }
+ }
+
+ function escribir_archivos_actividad(){
+ 
+ 	$act_id=$_SESSION["act_id"];
+    $class_bd=new bd();
+    $class_utiles= new utiles();
+    $sql="SELECT * FROM Archivos 
+    		WHERE act_id={$act_id}";
+
+    $resultado=$class_bd->ejecutar($sql);
+    
+    while ($r=$class_bd->retornar_fila($resultado))
+    {
+           
+        $fecha= $class_utiles->fecha_mysql_php_datetime($r["arc_timestamp"]);
+        $ruta='../../files/'.$r["arc_ruta"]."".$r{"arc_nombre"};
+        
+        $table="<tr href='{$ruta}' style='cursor:pointer'>";
+        $table.="<td style='color:{$color};'>{$r["act_id"]}</td>";
+        $table.="<td style='color:{$color};'><a href='{$ruta}' target='_blank'>{$r["arc_nombre"]}</a></td>";
+        $table.="<td style='color:{$color};'>{$r["arc_peso"]} KB</td>";
+        $table.="<td style='color:{$color};'>{$fecha}</td>";
+        $table.="<td style='color:{$color};' onclick='eliminar_archivo({$r["arc_id"]});'>{$_SESSION["act_id"]}</td>";
+        $table.="</tr>";
+
+        echo $table;
+        
+    }
+
+
+
+
+ }
 ?>
 <head>
 
@@ -241,6 +301,10 @@ function escribir_actividades($get_cas_id){
 	</div>
 	<!-- END PAGE CONTAINER -->
 
+	<a class="btn default" data-toggle="modal" href="#basic_archivos">
+									Todos los Archivos </a>
+
+
 	<!-- BEGIN MODAL -->
 	<div class="modal fade" id="ajax" role="basic" aria-hidden="true">
 		<div class="page-loading page-loading-boxed">
@@ -255,6 +319,82 @@ function escribir_actividades($get_cas_id){
 	</div>
 	<!-- END MODAL -->
 	
+
+
+	<div class="modal fade" id="basic" tabindex="-1" role="basic" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+					<h4 class="modal-title">Carga de Archivos</h4>
+				</div>
+				<div class="modal-body">
+
+						<fieldset class="left">
+					       <!-- <legend>Seleccione los Archivos a Subir</legend>-->
+					        <p>Seleccione un archivo y presione el botón Subir </p>
+					        <form name="form5" enctype="multipart/form-data" method="post" action="upload.php" />
+					            <p><input type="file" size="32" name="my_field" value="" id="xhr_field" /></p>
+					            <div id="xhr_status"></div>
+					            <p class="button"><input type="hidden" name="action" value="xhr" />
+					            <input type="submit" name="Submit" value="Subir" id="xhr_upload"/></p>
+					        </form>
+					        <div id="xhr_result"></div>
+				    	</fieldset>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn default" data-dismiss="modal">Close</button>
+					
+				</div>
+			</div>
+			<!-- /.modal-content -->
+		</div>
+		<!-- /.modal-dialog -->
+	</div>
+
+		<div class="modal fade" id="basic_archivos" tabindex="-1" role="basic" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+					<h4 class="modal-title">Archivos adjuntos al caso</h4>
+				</div>
+				<div class="modal-body">
+						
+						<table class="table table-striped table-bordered table-hover"
+									id="sample_3">
+									<thead>
+										<tr>
+											<th>Id Actividad</th>
+											<th>Nombre</th>
+											<th>Tamaño</th>
+											<th>Fecha</th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody>
+            							<?php 
+            							    escribir_archivos_caso($get_cas_id); 	
+            							?>
+        							</tbody>
+								</table>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn default" data-dismiss="modal">Close</button>
+					
+				</div>
+			</div>
+			<!-- /.modal-content -->
+		</div>
+		<!-- /.modal-dialog -->
+	</div>
+
+
+
+
+
 	<!-- BEGIN PRE-FOOTER -->
 <?php include("includes/prefooter.html")?>
 <!-- END PRE-FOOTER -->
@@ -316,6 +456,115 @@ function redireccionar(pagina) {
 	}             
 }
 //--END JAVASCRIPT FUNCTIONS--
+</script>
+
+
+ <script type="text/javascript">
+
+    window.onload = function () {
+
+      function xhr_send(f, e, doc_type) {
+        if (f) {
+          xhr.onreadystatechange = function(){
+            if(xhr.readyState == 4){
+              document.getElementById(e).innerHTML = xhr.responseText;
+            }
+          }
+          xhr.open("POST", "../classes/class.upload_v32/upload.php?action=xhr&act_id=<?php echo $_SESSION['act_id'];?>&doc_type=" + doc_type);
+
+          xhr.setRequestHeader("Cache-Control", "no-cache");
+          xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+          xhr.setRequestHeader("X-File-Name", f.name);
+          xhr.send(f);
+        }
+      }
+
+      function xhr_parse(f, e) {
+        if (f) {
+          document.getElementById(e).innerHTML = "File selected : " + f.name + "(" + f.type + ", " + f.size + ")";
+        } else {
+          document.getElementById(e).innerHTML = "No file selected!";
+        }
+      }
+
+      function dnd_hover(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        e.target.className = (e.type == "dragover" ? "hover" : "");  
+      }
+
+      var xhr = new XMLHttpRequest();
+
+      if (xhr && window.File && window.FileList) {
+
+        // xhr example
+        var xhr_file = null;
+        document.getElementById("xhr_field").onchange = function () {
+          xhr_file = this.files[0];
+          xhr_parse(xhr_file, "xhr_status");
+        }
+        document.getElementById("xhr_upload").onclick = function (e) {
+          e.preventDefault();
+          xhr_send(xhr_file, "xhr_result");
+        }
+
+        // drag and drop example
+        var dnd_file = null; 
+        document.getElementById("dnd_drag").style.display = "block";
+        document.getElementById("dnd_field").style.display = "none";
+        document.getElementById("dnd_drag").ondragover = function (e) {
+          dnd_hover(e);
+        }
+        document.getElementById("dnd_drag").ondragleave = function (e) {
+          dnd_hover(e);
+        }
+        document.getElementById("dnd_drag").ondrop = function (e) {
+          dnd_hover(e);
+          var files = e.target.files || e.dataTransfer.files;
+          dnd_file = files[0];
+          xhr_parse(dnd_file, "dnd_status");
+        }
+        document.getElementById("dnd_field").onchange = function (e) {
+          dnd_file = this.files[0];
+          xhr_parse(dnd_file, "dnd_status");
+        }
+        document.getElementById("dnd_upload").onclick = function (e) {
+          e.preventDefault();
+          xhr_send(dnd_file, "dnd_result");
+        }
+
+      }
+    }
+    </script>
+
+
+<script type="text/javascript">
+function eliminar_archivo(arc_id){
+        mensaje =   "Seguro desea borrar el documento?";
+        confirmar=confirm(mensaje); 
+        if (confirmar) {
+        //alert(arc_id);
+            //showLoadingNewupdate();
+            $.ajax({
+                type:"POST",
+                url: "../abm/abm.archivos.php",
+                data:{arc_id:arc_id}, 
+                cache: false,
+                success : function (msg) {
+                    alert (msg);
+                   // hideLoadingNewupdate();
+                    //new_can_id = parseInt(msg);
+                    //if (new_can_id==-10)
+                    //   alert ("Error: There is already a Candidate registered width the same DNI in a recentrly closed exam or in an open Exam");
+                    //else{
+                       alert ("El archivo fue eliminado")
+                     //  redirect(new_can_id);
+                    }    
+                
+            });  
+        }   
+        
+    }   
 </script>
 
 </body>

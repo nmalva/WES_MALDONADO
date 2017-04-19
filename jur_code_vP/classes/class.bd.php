@@ -4,7 +4,7 @@ class bd
   private $servidor="localhost";
   private $usuario="root";
   private $clave="root";
-  private $basededatos="nmalva_nmdalel";
+  private $basededatos="WES_MALDONADO";
   private $conexion;
 
   function __construct()

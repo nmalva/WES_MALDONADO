@@ -16,10 +16,16 @@ include_once("../classes/class.utiles.php");
 <?php 
 $get_act_id=$_GET["act_id"];
 
+$_SESSION["act_id"]=$get_act_id;
+$_SESSION["cas_id"]=getCasId($get_act_id);
+
+
+
 $cas_id=($_GET["cas_id"]!="" ? $_GET["cas_id"] : getCasId($get_act_id));
 $session_usu_id=$_SESSION["usu_id"];
 $submit="Guardar";
 $usu_perfil=$_SESSION["usu_perfil"];
+
 
 ?>
 <!-- END GLOBAL VARIABLES -->
@@ -134,6 +140,29 @@ function getOption_cli($cli_id)
             echo "<option value='{$r["cli_id"]}'>{$r["cli_apellido"]} {$r["cli_nombre"]} - {$r["cli_dni"]} </option>";
     }
 }
+
+function imprimir_archivos_actividad($get_act_id)
+{
+    $class_bd = new bd();
+    $class_utiles=new utiles();
+    $sql = "SELECT * FROM Archivos WHERE act_id=$get_act_id";
+    $resultado = $class_bd->ejecutar($sql);
+    while ($r = $class_bd->retornar_fila($resultado)) {
+        $fecha= $class_utiles->fecha_mysql_php_datetime($r["arc_timestamp"]);
+        $ruta='../../files/'.$r["arc_ruta"]."".$r["arc_nombre"];
+        $nombre=$r["arc_nombre"];
+        $table="<tr >";
+        $table.="<td style='color:{$color};'><a href='{$ruta}'>{$r["arc_nombre"]}</a></td>";
+        $table.="<td style='color:{$color};'>{$r["arc_peso"]} KB</td>";
+        $table.="<td style='color:{$color};'>{$fecha}</td>";
+        $table.="<td onclick='eliminar_archivo({$r["arc_id"]});' style='cursor:pointer; style='text'><i style='font-size:15px;' class='fa fa-times'></td>";
+        $table.="</tr>";
+
+        echo $table;
+    }
+}
+
+
 ?>
 <!--  END PHP FUNCTIONS -->
 <!-- BEGIN PAGE LEVEL STYLES USED BYE TOASTR NOTIFICATION -->
@@ -259,6 +288,37 @@ function getOption_cli($cli_id)
 	                        <input type="hidden" name="usu_idemisor" class="btn blue" value='<?php echo $session_usu_id;?>'>
 					</form>
 					<!-- END FORM-->
+
+                            <table class="table table-striped table-bordered table-hover"
+                                    id="sample_3">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Tamaño</th>
+                                            <th>Fecha</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php 
+                                             imprimir_archivos_actividad($get_act_id);
+                                        ?>
+                                    </tbody>
+                                </table>
+                          
+
+                
+                        <?php 
+
+                        if (isset($_SESSION["act_id"])){       
+                           echo "<a class='btn default' id='agregar_archivo' data-toggle='modal' href='#basic'> Adjuntar Archivo a la Actividad </a>";
+                       }else{
+                           echo "<a class='btn default' id='agregar_archivo' style='display:none;' data-toggle='modal' href='#basic'> Adjuntar Archivo a la Actividad </a>";
+                       }
+
+                        ?>
+
+                       
 				</div>
 			</div>
 		</div>
@@ -347,6 +407,7 @@ function nuevoModificarActividad(){
                     var new_act_id;
                 	new_act_id = parseInt(msg);
                 	alert ("La actividad ha sido ingresada");
+                    showAgregarArchivo();
                 	//redireccionar_casos_tabla(new_cas_id);    
             	}
             });  
@@ -369,11 +430,15 @@ function nuevoModificarActividad(){
 }   
 
 function showLoadingNewupdate(){
-    this.document.getElementById("loading_newupdate").style.display = 'inline';
+    this.document.getElementById("agregar_archivo").style.display = 'inline';
     }
 function hideLoadingNewupdate(){
     this.document.getElementById("loading_newupdate").style.display = 'none';
     }
+function showAgregarArchivo(){
+    this.document.getElementById("agregar_archivo").style.disabled='inline';
+    }
+
 function toast(){
     toastr.options = {
         "closeButton": true,
@@ -405,7 +470,34 @@ jQuery(document).ready(function() {
    //ComponentsFormTools.init();
    UIToastr.init(); //used by toastr
    ComponentsPickers.init();
-   
- 
 });
+</script>
+
+<script type="text/javascript">
+function eliminar_archivo(arc_id){
+        mensaje =   "Seguro desea borrar el documento?";
+        confirmar=confirm(mensaje); 
+        if (confirmar) {
+        //alert(arc_id);
+            //showLoadingNewupdate();
+            $.ajax({
+                type:"POST",
+                url: "../abm/abm.archivos.php",
+                data:{arc_id:arc_id}, 
+                cache: false,
+                success : function (msg) {
+                    alert (msg);
+                   // hideLoadingNewupdate();
+                    //new_can_id = parseInt(msg);
+                    //if (new_can_id==-10)
+                    //   alert ("Error: There is already a Candidate registered width the same DNI in a recentrly closed exam or in an open Exam");
+                    //else{
+                       alert ("El archivo fue eliminado")
+                     //  redirect(new_can_id);
+                    }    
+                
+            });  
+        }   
+        
+    }   
 </script>

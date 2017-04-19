@@ -1,25 +1,50 @@
 <?php
 // http://www.verot.net/php_class_upload_docs.htm
-
+session_start();
+ob_start();
 include ("../class.bd.php");
+include ("../class.actividades.php");
 
-echo "hola";
-//include ("../class.candidate.php");
-
-//$get_can_id=$_GET["can_id"];
-//$get_exa_id=$_GET["exa_id"];
-//$get_doc_type=$_GET["doc_type"];
+$get_doc_type=$_GET["doc_type"];
+$tenant_control = $_SESSION["tenant_control"];
+$cas_id= getCasId($_SESSION["act_id"]);
 
 // Get the parameters date and exam name to build the content folder
-Function getParameters($get_exa_id){
-    $class_bd=new bd();
-    $sql="SELECT * FROM Exam INNER JOIN TypeExam on Exam.tye_id=TypeExam.tye_id WHERE exa_id={$get_exa_id}";
+Function getParameters($get_act_id){
+   /* $class_bd=new bd();
+    $sql="SELECT * FROM Actividades INNER JOIN Casos on Actividades.cas_id=Casos.cas_id WHERE cas_id={$get_act_id}";
     $resultado=$class_bd->ejecutar($sql);
     $r=$class_bd->retornar_fila($resultado);
     $parameters["exa_date"]=$r["exa_date"];
     $parameters["tye_name"]=$r["tye_name"];
     return ($parameters);
+    */
+}
+
+function getCasId($act_id){  
+    $class_actividades=new Actividades($act_id);
+    return($class_actividades->getCas_id());
+}
+
+Function almacenar_base($get_act_id, $cas_id, $ruta, $nombre, $get_doc_type, $tamaño){
+   //echo $_SESSION["act_id"]."<br/>";
+   //echo $get_cas_id."<br/>";
+   //echo $ruta."<br/>";
+   //echo $nombre."<br/>";
+   //echo $get_doc_type."<br/>";
+   //echo $tamaño."<br/>";
+
+
+
+    $class_bd=new bd();
+
+    $sql="INSERT INTO Archivos (act_id,cas_id,arc_ruta,arc_nombre,arc_extension,arc_peso)
+        VALUES ('{$_SESSION["act_id"]}','{$cas_id}','{$ruta}','{$nombre}','{$get_doc_type}','{$tamaño}')";
+        
+    $class_bd->ejecutar($sql);
     
+   // echo $sql;
+
 }
 
 
@@ -29,17 +54,7 @@ error_reporting(E_ALL);
 include('class.upload.php');
 
 function write_file_name($file_dst_name_body, $file_dst_name_ext,$doc_type, $can_id, $folder){
-    $file_name=$folder."/".$file_dst_name_body.".".$file_dst_name_ext;
-    $class_candidate=new Candidate($can_id);
-    
-    if ($doc_type=="payment")
-        $class_candidate->setCan_paymentfile($file_name);
-    if ($doc_type=="dni")
-        $class_candidate->setCan_dnifile($file_name);
-    if ($doc_type=="aci")
-        $class_candidate->setCan_acifile($file_name);
-    if ($doc_type=="disability")
-        $class_candidate->setCan_disabilityfile($file_name);   
+    $file_name=$folder."/".$file_dst_name_body.".".$file_dst_name_ext;  
 }
 
 function delete_repeted_files($file_dst_path, $file_dst_name_body, $file_dst_name_ext){
@@ -78,11 +93,12 @@ if ($cli) {
 // set variables
 //$dir_dest = (isset($_GET['dir']) ? $_GET['dir'] : 'test/'); // saving directory
 //$parameters=getParameters($get_exa_id);
-$folder="cualquiera/";
+
+$folder=$tenant_control."/".$cas_id."/";
 
 $dir_dest =("../../../files/".$folder); // saving directory
 $dir_dest_read =("../../files/".$folder); // saving directory
-$file_name = $get_can_id."_".$get_doc_type;
+//$file_name = $get_can_id."_".$get_doc_type;
 $dir_pics = (isset($_GET['pics']) ? $_GET['pics'] : $dir_dest);
 
 
@@ -283,10 +299,10 @@ if ((isset($_POST['action']) ? $_POST['action'] : (isset($_GET['action']) ? $_GE
         // we create an instance of the class, feeding in the name of the file
         // sent via a XMLHttpRequest request, prefixed with 'php:'
        
-        $handle = new Upload('php:'.$_SERVER['HTTP_X_FILE_NAME']);  
-        $handle->file_new_name_body = $file_name;
+        $handle = new Upload('php:'.$_SERVER['HTTP_X_FILE_NAME'], 'es_ES');  
+       // $handle->file_new_name_body = $file_name;
         $handle->file_max_size= 2097512;//this is 2MB (NM)
-        $handle->file_overwrite = true; // to overwrite the same name file (NM)
+        $handle->file_overwrite = false; // to overwrite the same name file (NM)
         
        
         
@@ -312,14 +328,34 @@ if ((isset($_POST['action']) ? $_POST['action'] : (isset($_GET['action']) ? $_GE
         // we check if everything went OK
         if ($handle->processed) {
             // everything was fine !
+
+            $tamaño = round(filesize($handle->file_dst_pathname)/256)/4;
+            $ruta = $handle->file_dst_path;
+            $nombre = $handle->file_dst_name;
+            $tipo_documento = $handle->file_src_name_ext;
+
            
             echo '<p class="result">';
-            echo '  <b>File uploaded with succes</b><br />';
+            echo '  <b>Archivo Subido con Exito</b><br />';
             echo '  File: <a href="'.$dir_dest_read.'/'.$handle->file_dst_name . '">' . $handle->file_dst_name . '</a>';
             echo '   (' . round(filesize($handle->file_dst_pathname)/256)/4 . 'KB)';
             echo '</p>';
+    
+            almacenar_base($_SESSION["act_id"], $cas_id, $folder, $nombre, $tipo_documento, $tamaño);
+
+
             delete_repeted_files($handle->file_dst_path,$handle->file_dst_name_body, $handle->file_dst_name_ext); // To delete repeted files with different ext (NM)
             write_file_name($handle->file_dst_name_body, $handle->file_dst_name_ext, $get_doc_type, $get_can_id, $folder);
+
+           
+
+
+
+
+            //almacenar_base($tamaño; $path; $nombre; $get_act_id; $get_cas_id);
+
+
+
         } else {
             // one error occured
             echo '<p class="result">';

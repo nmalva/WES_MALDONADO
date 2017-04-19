@@ -45,6 +45,7 @@ include_once('../classes/class.bd.php');
 			$class_utiles->fecha_php_mysql_datetime($campos["act_fecha"])
 			);
 	   
+	   $_SESSION["act_id"]= $new_id; // Si ingreso una nueva actividad, al querer cargar un archivo debo tener el id de la actividad.
 	   if ($campos["act_estado"]==1){
 	       $class_actividades= new Actividades($new_id);
 	       $class_actividades->setAct_fechacierre($class_utiles->fecha_mysql_timestamp());	
